@@ -48,7 +48,10 @@ class TemplateDirectory(object):
 
     def __getitem__(self, template_name):
         filename = os.path.join(self.directory, template_name)
-        return open(filename).read()
+        if os.path.isfile(filename):
+            return open(filename).read()
+        else:
+            return ''
 
 class Parser(object):
     def __init__(self, fail_gracefully=True):
@@ -62,7 +65,7 @@ class Parser(object):
         self.root = Template(template_name)
         self.stack = [self.root]
         self.current = self.root
-        self.tokens = Lexer(self.templates[template_name], 'django-pancake').tokenize()
+        self.tokens = Lexer(self.templates[template_name].decode('utf-8'), 'django-pancake').tokenize()
         _TOKEN_TEXT, _TOKEN_VAR, _TOKEN_BLOCK = TOKEN_TEXT, TOKEN_VAR, TOKEN_BLOCK
         while self.tokens:
             token = self.next_token()

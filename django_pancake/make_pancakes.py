@@ -1,5 +1,6 @@
 from flatten import flatten, TemplateDirectory
 import os
+import codecs
 
 def template_names(input_dir, prefix=''):
     for filename in os.listdir(input_dir):
@@ -21,7 +22,7 @@ def make_pancakes(input_dir, output_dir):
             os.makedirs(os.path.dirname(outfile))
         except OSError: # Already exists.
             pass
-        with open(outfile, 'w') as fp:
+        with codecs.open(outfile, 'w', 'utf-8') as fp:
             fp.write(pancake)
 
 if __name__ == "__main__":
