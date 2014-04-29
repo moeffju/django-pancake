@@ -139,7 +139,7 @@ class Parser(object):
     def do_load(self, text):
         # Keep track of which template libraries have been loaded,
         # so that we can pass them up to the root.
-        self.root.loads.update(text.split())
+        self.root.loads.update([text])
 
     def do_include(self, text):
         if ' only' in text:
@@ -203,7 +203,8 @@ def flatten_ast(template):
     # Put them in alphabetical order to be consistent.
     if master.loads:
         loads = sorted(master.loads)
-        master.leaves.insert(0, '{%% load %s %%}' % ' '.join(loads))
+        for load in master.loads:
+            master.leaves.insert(0, '{%% load %s %%}' % load)
 
     return master
 
