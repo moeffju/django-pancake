@@ -57,7 +57,7 @@ class Parser(object):
     def __init__(self, fail_gracefully=True):
         self.fail_gracefully = fail_gracefully
 
-    def parse(self, template_name, templates):
+    def parse(self, template_name, templates, fallback=None):
         """
         Creates an AST for the given template. Returns a Template object.
         """
@@ -65,7 +65,11 @@ class Parser(object):
         self.root = Template(template_name)
         self.stack = [self.root]
         self.current = self.root
-        self.tokens = Lexer(self.templates[template_name].decode('utf-8'), 'django-pancake').tokenize()
+        try:
+            self.tokens = Lexer(self.templates[template_name].decode('utf-8'), 'django-pancake').tokenize()
+        except IOError as e:
+            self.root.leaves.append(fallback)
+            return self.root
         _TOKEN_TEXT, _TOKEN_VAR, _TOKEN_BLOCK = TOKEN_TEXT, TOKEN_VAR, TOKEN_BLOCK
         while self.tokens:
             token = self.next_token()
@@ -74,7 +78,7 @@ class Parser(object):
                 self.current.leaves.append(token.contents)
 
             elif token.token_type == _TOKEN_VAR:
-                if token.contents == 'block.super':
+                if token.contents == 'block.super' and self.root.parent is not None:
                     if self.root.parent is None:
                         raise PancakeFail('Got {{ block.super }} in a template that has no parent')
 
@@ -95,7 +99,10 @@ class Parser(object):
                     tag_name, arg = token.contents.strip(), None
                 method_name = 'do_%s' % tag_name
                 if hasattr(self, method_name):
-                    getattr(self, method_name)(arg)
+                    try:
+                        getattr(self, method_name)(arg)
+                    except PancakeTemplateNotFound as e:
+                        self.current.leaves.append('{%% %s %%}' % token.contents)
                 else:
                     self.current.leaves.append('{%% %s %%}' % token.contents)
 
