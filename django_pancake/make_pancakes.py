@@ -1,23 +1,13 @@
-from flatten import flatten, TemplateDirectory
+from flatten import flatten, TemplateDirectories
 import os
 import codecs
 
-def template_names(input_dir, prefix=''):
-    for filename in os.listdir(input_dir):
-        template_name = os.path.join(prefix, filename)
-        full_name = os.path.join(input_dir, filename)
-        if os.path.isdir(full_name):
-            for name in template_names(full_name, template_name):
-                yield name
-        else:
-            yield template_name
-
-def make_pancakes(input_dir, output_dir):
-    templates = TemplateDirectory(input_dir)
-    for template_name in template_names(input_dir):
-        print "Writing %s" % template_name
-        pancake = flatten(template_name, templates)
+def make_pancakes(template_dirs, output_dir):
+    templates = TemplateDirectories(template_dirs)
+    for template_name in set(templates.list()):
         outfile = os.path.join(output_dir, template_name)
+        print "'%s' -> '%s'" % (template_name, outfile)
+        pancake = flatten(template_name, templates)
         try:
             os.makedirs(os.path.dirname(outfile))
         except OSError: # Already exists.
@@ -27,4 +17,4 @@ def make_pancakes(input_dir, output_dir):
 
 if __name__ == "__main__":
     import sys
-    make_pancakes(sys.argv[1], sys.argv[2])
+    make_pancakes(sys.argv[1:-1], sys.argv[-1])

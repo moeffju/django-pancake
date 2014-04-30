@@ -5,6 +5,9 @@ import re
 class PancakeFail(Exception):
     pass
 
+class PancakeTemplateNotFound(PancakeFail):
+    pass
+
 class ASTNode(object):
     "A node in the AST."
     def __init__(self, name):
@@ -48,10 +51,39 @@ class TemplateDirectory(object):
 
     def __getitem__(self, template_name):
         filename = os.path.join(self.directory, template_name)
-        if os.path.isfile(filename):
+        try:
             return open(filename).read()
-        else:
-            return ''
+        except IOError as e:
+            raise PancakeTemplateNotFound()
+
+
+class TemplateDirectories(object):
+    def __init__(self, directories):
+        self.directories = directories
+
+    def __getitem__(self, template_path):
+        # if os.path.isfile(template_path):
+        #     return open(template_path).read()
+        for directory in self.directories:
+            filename = os.path.join(directory, template_path)
+            if os.path.isfile(filename):
+                return open(filename).read()
+        raise PancakeTemplateNotFound()
+
+    def template_names(self, input_dir, prefix=''):
+        for filename in os.listdir(input_dir):
+            template_name = os.path.join(prefix, filename)
+            full_name = os.path.join(input_dir, filename)
+            if os.path.isdir(full_name):
+                for name in self.template_names(full_name, template_name):
+                    yield name
+            else:
+                yield template_name
+
+    def list(self):
+        for directory in self.directories:
+            for name in self.template_names(directory):
+                yield name
 
 class Parser(object):
     def __init__(self, fail_gracefully=True):
@@ -223,4 +255,4 @@ def flatten(template_name, templates):
 
 if __name__ == "__main__":
     import sys
-    print flatten(sys.argv[1], TemplateDirectory(sys.argv[2]))
+    print flatten(sys.argv[1], TemplateDirectories(sys.argv[2:]))
